@@ -19,6 +19,8 @@ class ProductTest {
     @Test
     void testSubtractProductCountToNegative(){
         Product product = new Product("milk", 2);
-        Assertions.assertThrows(Exception.class, () -> product.subtractCount(3));
+        Exception exception = Assertions.assertThrows(Exception.class, () -> product.subtractCount(3));
+        Assertions.assertTrue(exception.getMessage().contains(
+                "Количество доступных товаров не должно быть отрицательным"));
     }
 }

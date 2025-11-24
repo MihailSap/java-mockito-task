@@ -8,8 +8,6 @@ import product.Product;
 
 /**
  * <b>Тестирование класса {@link Cart}</b>
- * <p>В этом классе реализованы только те тесты,
- * которые демонстрируют некорректную работу методов {@link Cart}.</p>
  */
 class CartTest {
 
@@ -52,5 +50,43 @@ class CartTest {
         cart.add(product, 2);
         cart.add(product, 2);
         Assertions.assertEquals(4, cart.getProducts().get(product));
+    }
+
+    /**
+     * <b>Тест для метода {@link Cart#add(Product, int)}</b>
+     * <p>Проверяется, что нельзя добавить в корзину больше товара, чем задано</p>
+     * Тест проходит, так как для этого случая валидация при добавлении в корзину работает корректно
+     */
+    @Test
+    void testAddMoreProductsThanExists(){
+        Product product = new Product("milk", 1);
+        IllegalArgumentException exception = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> cart.add(product, 2)
+        );
+
+        Assertions.assertTrue(exception.getMessage().contains(
+                "Невозможно добавить товар 'milk' в корзину, т.к. нет необходимого количества товаров"));
+    }
+
+    /**
+     * <b>Тест для метода {@link Cart#add(Product, int)}</b>
+     * <p>Проверяется, что нельзя добавить в корзину 0 и менее товаров</p>
+     */
+    @Test
+    void testAddIncorrectProductsCountInCart(){
+        Exception exAddZeroProducts = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> cart.add(product, 0)
+        );
+        Assertions.assertEquals(
+                "Количество товаров, добавляемых в корзину, должно быть больше нуля", exAddZeroProducts.getMessage());
+        Exception exAddNegativeProductsCount = Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> cart.add(product, -1)
+        );
+        Assertions.assertEquals(
+                "Количество товаров, добавляемых в корзину, должно быть больше нуля", exAddNegativeProductsCount.getMessage());
+
     }
 }

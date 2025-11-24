@@ -49,25 +49,18 @@ class ShoppingServiceTest {
     /**
      * <b>Тест для метода {@link ShoppingService#getCart(Customer)}</b>
      * <p>Проверяется, что метод корректно вернет объект {@link Cart}</p>
-     * В классе {@link Cart} не переопределены методы {@code equals()} и {@code hashCode()}.
-     * Поэтому тест не пройдёт проверку даже при корректной работе метода
-     */
-    @Test
-    void testGetCartCheckEquals(){
-        Assertions.assertEquals(cart, shoppingService.getCart(customer));
-    }
-
-    /**
-     * <b>Тест для метода {@link ShoppingService#getCart(Customer)}</b>
-     * <p>Проверяется, что метод корректно вернет объект {@link Cart}</p>
+     * Проверяются два случая: получение корзины с продуктами и получение пустой корзины
      * Данный метод создает новый объект {@link Cart} с указанным {@link Customer},
      * вместо того, чтобы получать существующий.
      * Такой подход не учитывает наличие объектов {@link Product},
      * которые могут быть привязаны к данной {@link Cart}.
+     * Также, в классе {@link Cart} не переопределены методы {@code equals()} и {@code hashCode()}.
+     * Это не позволяет корректно сравнивать объекты.
      * Поэтому тест не пройдёт проверку
      */
     @Test
     void testGetCartCheckProducts(){
+        Assertions.assertEquals(cart, shoppingService.getCart(customer));
         cart.add(new Product("milk", 3), 2);
         Assertions.assertEquals(
                 cart.getProducts(), shoppingService.getCart(customer).getProducts());
@@ -85,7 +78,7 @@ class ShoppingServiceTest {
                 .thenReturn(products);
 
         Assertions.assertEquals(products, shoppingService.getAllProducts());
-        Mockito.verify(productDaoMock, Mockito.times(1))
+        Mockito.verify(productDaoMock)
                 .getAll();
     }
 
@@ -101,7 +94,7 @@ class ShoppingServiceTest {
         Mockito.when(productDaoMock.getByName(productName))
                 .thenReturn(product);
         Assertions.assertEquals(product, shoppingService.getProductByName(productName));
-        Mockito.verify(productDaoMock, Mockito.times(1))
+        Mockito.verify(productDaoMock)
                 .getByName(productName);
     }
 
@@ -109,16 +102,21 @@ class ShoppingServiceTest {
      * <b>Тест для метода {@link ShoppingService#buy(Cart)}</b>
      * <p>Проверяется, что метод возвращает {@code true} при успешной покупке</p>
      * Ожидается, что метод {@link ProductDao#save(Product)} будет вызван 1 раз
+     * Также, ожидается, что после покупки количество доступного товара
+     * уменьшится, а корзина очистится
      */
     @Test
     void testBuy() throws BuyException {
         cart.add(product, 2);
+        Assertions.assertEquals(Map.of(product, 2), cart.getProducts());
         Mockito.doNothing()
                 .when(productDaoMock)
                 .save(Mockito.isA(Product.class));
 
         Assertions.assertTrue(shoppingService.buy(cart));
-        Mockito.verify(productDaoMock, Mockito.times(1))
+        Assertions.assertEquals(1, product.getCount());
+        Assertions.assertTrue(cart.getProducts().isEmpty());
+        Mockito.verify(productDaoMock)
                 .save(product);
     }
 
@@ -129,27 +127,10 @@ class ShoppingServiceTest {
      * Ожидается, что ни разу не будет вызван метод {@link ProductDao#save(Product)}
      */
     @Test
-    void testWithEmptyCart() throws BuyException {
+    void testBuyWithEmptyCart() throws BuyException {
         Assertions.assertFalse(shoppingService.buy(cart));
         Mockito.verify(productDaoMock, Mockito.never())
                 .save(Mockito.any(Product.class));
-    }
-
-    /**
-     * <b>Тест для метода {@link ShoppingService#buy(Cart)}</b>
-     * <p>Проверяется, что метод очищает объект {@link Cart} от {@link Product},
-     * то есть очищает корзину, при успешной покупке.</p>
-     * Тест не пройдёт проверку, так как на самом деле в методе не реализовано очищение корзины
-     */
-    @Test
-    void testIsCartClearedAfterCorrectPurchase() throws BuyException {
-        cart.add(product, 2);
-        Mockito.doNothing()
-                .when(productDaoMock)
-                .save(Mockito.isA(Product.class));
-
-        shoppingService.buy(cart);
-        Assertions.assertTrue(cart.getProducts().isEmpty());
     }
 
     /**
@@ -202,21 +183,5 @@ class ShoppingServiceTest {
 
         Assertions.assertThrows(RuntimeException.class, () -> shoppingService.buy(cart));
         Assertions.assertEquals(3, product.getCount());
-    }
-
-    /**
-     * <b>Тест для метода {@link ShoppingService#buy(Cart)}</b>
-     * <p>Проверяется, что метод возвращает исключение при работе с корзиной,
-     * в которой количество товаров равно нулю</p>
-     * Тест не пройдёт, так как обработка этого случая не предусмотрена
-     */
-    @Test
-    void testBuyZeroProductsInCart() {
-        cart.add(product, 0);
-        Mockito.doNothing()
-                .when(productDaoMock)
-                .save(Mockito.isA(Product.class));
-
-        Assertions.assertThrows(Exception.class, () -> shoppingService.buy(cart));
     }
 }
